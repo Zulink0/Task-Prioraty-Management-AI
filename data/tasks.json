@@ -1,0 +1,23 @@
+[
+  {
+    "id": "20260621234827",
+    "nama": "Tugas 4 Matematika Diskrit",
+    "kategori": "Kuliah",
+    "deadline": "2026-06-22",
+    "kesulitan": "Mudah",
+    "deskripsi": "",
+    "selesai": true,
+    "dibuat": "2026-06-21 23:48",
+    "tanggal_selesai": "2026-06-21"
+  },
+  {
+    "id": "20260621234934",
+    "nama": "PPT Forensik",
+    "kategori": "Kuliah",
+    "deadline": "2026-06-22",
+    "kesulitan": "Mudah",
+    "deskripsi": "",
+    "selesai": false,
+    "dibuat": "2026-06-21 23:49"
+  }
+]
