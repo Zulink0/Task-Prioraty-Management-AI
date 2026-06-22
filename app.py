@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, date, timedelta
@@ -65,25 +66,6 @@ st.markdown("""
 
 color_map = {"KRITIS": "#cc3333", "TINGGI": "#cc6600", "SEDANG": "#aaaa00", "RENDAH": "#008844"}
 
-if "show_ui" not in st.session_state:
-    st.session_state.show_ui = False
-
-if st.session_state.show_ui:
-    st.markdown("""<style>
-    #MainMenu, header, footer,
-    [data-testid="stToolbar"],
-    [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"] { display: block !important; }
-    [data-testid="collapsedControl"] { display: block !important; }
-    </style>""", unsafe_allow_html=True)
-else:
-    st.markdown("""<style>
-    #MainMenu, header, footer,
-    [data-testid="stToolbar"],
-    [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"] { display: none !important; }
-    [data-testid="collapsedControl"] { display: block !important; }
-    </style>""", unsafe_allow_html=True)
 
 # ─── SIDEBAR ──────────────────────────────────────────────
 with st.sidebar:
@@ -92,13 +74,19 @@ with st.sidebar:
     with st.form("form_tugas", clear_on_submit=True):
         nama      = st.text_input("Nama Tugas", placeholder="Contoh: Tugas Makalah AI")
         kategori  = st.selectbox("Kategori", ["Kuliah", "Organisasi", "Pribadi"])
-        deadline  = st.date_input("Deadline", min_value=date.today(), value=date.today() + timedelta(days=3))
+        deadline  = st.date_input("Deadline (Tanggal)", min_value=date.today(), value=date.today() + timedelta(days=3))
+        col_jam, col_menit = st.columns(2)
+        with col_jam:
+            jam   = st.number_input("Jam", min_value=0, max_value=23, value=23, step=1)
+        with col_menit:
+            menit = st.number_input("Menit", min_value=0, max_value=59, value=59, step=1)
         kesulitan = st.radio("Kesulitan", ["Mudah", "Sedang", "Sulit"], horizontal=True)
         deskripsi = st.text_area("Deskripsi (opsional)", placeholder="Detail tugas...", height=70)
         submit    = st.form_submit_button("Tambahkan", use_container_width=True)
         if submit:
             if nama.strip():
-                tambah_tugas(nama.strip(), kategori, str(deadline), kesulitan, deskripsi)
+                deadline_str = f"{deadline} {jam:02d}:{menit:02d}"
+                tambah_tugas(nama.strip(), kategori, deadline_str, kesulitan, deskripsi)
                 st.success("Tugas berhasil ditambahkan.")
                 st.rerun()
             else:
@@ -117,11 +105,6 @@ Sistem mencocokkan kondisi tugas dengan rule base untuk menentukan prioritas.
 # ─── HEADER ───────────────────────────────────────────────
 st.markdown('<div class="page-title">AI Penentu Prioritas Tugas</div>', unsafe_allow_html=True)
 st.markdown('<div class="page-sub">Expert System — Forward Chaining</div>', unsafe_allow_html=True)
-
-label_ui = "Sembunyikan UI Streamlit" if st.session_state.show_ui else "Tampilkan UI Streamlit"
-if st.button(label_ui):
-    st.session_state.show_ui = not st.session_state.show_ui
-    st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -156,7 +139,7 @@ if jml_kritis > 0:
     st.markdown(f'<div class="warning-bar"><strong>Perhatian:</strong> {jml_kritis} tugas kritis — {nama_kritis}</div>', unsafe_allow_html=True)
 
 # ─── TABS ─────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["Ranking Prioritas", "Visualisasi", "Selesai"])
+tab1, tab2, tab3, tab4 = st.tabs(["Ranking Prioritas", "Countdown", "Visualisasi", "Selesai"])
 
 # ══ TAB 1: RANKING ════════════════════════════════════════
 with tab1:
@@ -196,8 +179,81 @@ with tab1:
                     hapus_tugas(tugas["id"])
                     st.rerun()
 
-# ══ TAB 2: VISUALISASI ════════════════════════════════════
+# ══ TAB 2: COUNTDOWN ══════════════════════════════════════
 with tab2:
+    st.markdown("**Countdown Deadline**")
+    if not hasil_analisis:
+        st.info("Belum ada tugas aktif.")
+    else:
+        tugas_cd = [t for t in hasil_analisis if t["sisa_hari"] <= 7] or hasil_analisis[:5]
+
+        tasks_json = ""
+        for tugas in tugas_cd[:5]:
+            nama_safe = tugas["nama"].replace('"', '').replace("'", "")
+            dl = tugas["deadline"]
+            dl_js = dl.replace(" ", "T") + ":00" if len(dl) == 16 else dl + "T23:59:59"
+            tasks_json += f'{{nama:"{nama_safe}",kategori:"{tugas["kategori"]}",kesulitan:"{tugas["kesulitan"]}",deadline:new Date("{dl_js}")}},'
+
+        html_countdown = f"""
+        <div id="cd-wrap"></div>
+        <style>
+            .cd-box {{
+                background:#13131f;
+                border:1px solid #222238;
+                border-radius:8px;
+                padding:0.8rem 1.1rem;
+                margin-bottom:0.5rem;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            }}
+            .cd-name  {{ font-size:0.95rem; color:#aaaacc; font-weight:600; }}
+            .cd-sub   {{ font-size:0.78rem; color:#555577; margin-top:3px; }}
+            .cd-time  {{ font-size:1.3rem; font-weight:700; color:#8877cc; font-variant-numeric:tabular-nums; }}
+            .cd-lewat {{ color:#cc3333; }}
+        </style>
+        <script>
+        const tasks = [{tasks_json}];
+
+        function fmt(deadline) {{
+            const diff = deadline - new Date();
+            if (diff <= 0) return '<span class="cd-lewat">Lewat deadline</span>';
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            return d + "h " + String(h).padStart(2,"0") + "j " +
+                   String(m).padStart(2,"0") + "m " +
+                   String(s).padStart(2,"0") + "d";
+        }}
+
+        function render() {{
+            const el = document.getElementById("cd-wrap");
+            if (!el) return;
+            let html = "";
+            tasks.forEach(t => {{
+                const tgl = t.deadline.toISOString().split("T")[0];
+                html += `<div class="cd-box">
+                    <div>
+                        <div class="cd-name">${{t.nama}}</div>
+                        <div class="cd-sub">${{t.kategori}} &nbsp;·&nbsp; ${{t.kesulitan}} &nbsp;·&nbsp; ${{tgl}}</div>
+                    </div>
+                    <div class="cd-time">${{fmt(t.deadline)}}</div>
+                </div>`;
+            }});
+            el.innerHTML = html;
+        }}
+
+        render();
+        setInterval(render, 1000);
+        </script>
+        """
+
+        components.html(html_countdown, height=len(tugas_cd[:5]) * 90 + 20)
+        st.caption("Menampilkan tugas dengan deadline dalam 7 hari ke depan.")
+
+# ══ TAB 3: VISUALISASI ════════════════════════════════════
+with tab3:
     st.markdown("**Visualisasi Data**")
     if not hasil_analisis:
         st.info("Belum ada data.")
@@ -242,8 +298,8 @@ with tab2:
                    for i,t in enumerate(hasil_analisis,1)]
         st.dataframe(pd.DataFrame(df_data), use_container_width=True, hide_index=True)
 
-# ══ TAB 3: SELESAI ════════════════════════════════════════
-with tab3:
+# ══ TAB 4: SELESAI ════════════════════════════════════════
+with tab4:
     st.markdown("**Tugas Selesai**")
     if not tugas_selesai:
         st.info("Belum ada tugas yang diselesaikan.")

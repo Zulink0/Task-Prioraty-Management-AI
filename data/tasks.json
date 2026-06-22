@@ -17,7 +17,48 @@
     "deadline": "2026-06-22",
     "kesulitan": "Mudah",
     "deskripsi": "",
+    "selesai": true,
+    "dibuat": "2026-06-21 23:49",
+    "tanggal_selesai": "2026-06-22"
+  },
+  {
+    "id": "20260622125239",
+    "nama": "ppt",
+    "kategori": "Pribadi",
+    "deadline": "2026-06-22 13:00",
+    "kesulitan": "Sedang",
+    "deskripsi": "",
     "selesai": false,
-    "dibuat": "2026-06-21 23:49"
+    "dibuat": "2026-06-22 12:52"
+  },
+  {
+    "id": "20260622141106",
+    "nama": "mobbile",
+    "kategori": "Kuliah",
+    "deadline": "2026-06-30 14:30",
+    "kesulitan": "Mudah",
+    "deskripsi": "",
+    "selesai": false,
+    "dibuat": "2026-06-22 14:11"
+  },
+  {
+    "id": "20260622141142",
+    "nama": "yu",
+    "kategori": "Pribadi",
+    "deadline": "2026-06-27 23:59",
+    "kesulitan": "Sedang",
+    "deskripsi": "",
+    "selesai": false,
+    "dibuat": "2026-06-22 14:11"
+  },
+  {
+    "id": "20260622145342",
+    "nama": "Tugas AI",
+    "kategori": "Kuliah",
+    "deadline": "2026-06-23 14:59",
+    "kesulitan": "Sulit",
+    "deskripsi": "",
+    "selesai": false,
+    "dibuat": "2026-06-22 14:53"
   }
 ]

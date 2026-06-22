@@ -4,9 +4,11 @@ from engine.rules import RULES, BOBOT_KESULITAN, BOBOT_KATEGORI, PRIORITAS_ORDER
 
 def hitung_sisa_hari(deadline_str):
     try:
-        deadline = datetime.strptime(deadline_str, "%Y-%m-%d")
-        hari_ini = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        return (deadline - hari_ini).days
+        try:
+            deadline = datetime.strptime(deadline_str, "%Y-%m-%d %H:%M")
+        except:
+            deadline = datetime.strptime(deadline_str, "%Y-%m-%d").replace(hour=23, minute=59)
+        return (deadline - datetime.now()).days
     except:
         return 999
 
